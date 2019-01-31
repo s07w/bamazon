@@ -2,88 +2,99 @@ var mysql = require("mysql");
 var inquirer = require("inquirer");
 var Table = require("cli-table");
 
-//connection for sql database
-var password = keys.mysql.password;
+// creates the connection information for the sql database
 var connection = mysql.createConnection({
-    host: "localhost",
-    port: 8080,
+    host: "127.0.0.1",
+    port: 3306,
     user: "root",
-    password: password,
+    password: "y131v0u4c!",
     database: "bamazon"
 });
 
-connection.connect(function(err){
+// connect to the mysql server and sql database
+connection.connect(function(err) {
+    // console.log("Connected as id: "+ connection.threadId);
     if (err) throw err;
-    console.log("Connected on id: " + connection.threadId);
+
 });
 
+
 var start = function() {
-    connection.query("SELECT * FROM products", function(err,res){
+
+    // pulls all the information down from the mysql database
+    connection.query("SELECT * FROM products", function(err, results) {
         if (err) throw err;
 
-        var table = new Table ({
-            head: ["id", "product_name", "department_name", "price", "stock"],
-            colWidths: [5, 25, 25, 25]
+        // using the NPM cli-table to present the information in an easier to read format
+        var table = new Table({
+            head: ["ID", "Product Name", "Department", "Price", "Stock"],
+            colWidths: [5, 25, 25, 8, 5]
         });
+        // console.log("result" + results);
 
-
-        for (var i = 0; i < res.length; i++) {
+        // loops through the objects provided by the mysql server
+        for (var i = 0; i < results.length; i++) {
             table.push([
-                res[i].id,
-                res[i].product_name,
-                res[i].department_name,
-                res[i].price,
-                res[i].stock
+                results[i].id,
+                results[i].product_name,
+                results[i].department_name,
+                results[i].price,
+                results[i].stock
             ]);
         }
 
+        // populates the table 
         console.log(table.toString());
 
+        // prompts users to make their decisions
         inquirer.prompt([{
-            name: "id",
-            type: "input",
-            message: "What is the ID of the product you'd like to buy?",
-            validate: function(value) {
-                if (isNan(value) == false) {
-                    return true
-                } else {
-                    return false;
+                name: "id",
+                type: "input",
+                message: "What is the ID # of the car wash product you would like to purchase?",
+                validate: function(value) {
+                    if (isNaN(value) == false) {
+                        return true
+                    } else {
+                        return false;
+                    }
+                }
+            }, {
+                name: "quanity",
+                type: "input",
+                message: "How many would you like to purchase?",
+                validate: function(value) {
+                    if (isNaN(value) == false) {
+                        return true
+                    } else {
+                        return false;
+                    }
                 }
             }
-        }, {
-            name: "quantity",
-            type: "input",
-            message: "How many would you like to purchase?",
-            validate: function(value) {
-                if (isNan(value) == false) {
-                    return true
-                } else { 
-                    return false;
-                }
-            }
-        }
 
-        ]).then(function(answer){
-            var quantity = answer.quantity;
+        ]).then(function(answer) {
+
+            var quanity = answer.quanity;
             var itemId = answer.id;
-            connection.query("SELECT * FROM products WHERE ?", [{
+            connection.query('SELECT * FROM products WHERE ?', [{
                 id: itemId
-            }], function (err, item){
+            }], function(err, selectedItem) {
+
                 if (err) throw err;
-                if (item[0].stock - quantity >= 0) {
-                    var orderTotal = quantity * item[0].price;
+                if (selectedItem[0].stock - quanity >= 0) {
 
-                    console.log("Quantity in stock!");
-                    console.log("Number in stock: " + item[0].stock + "Order quantity: " + quantity);
-                    console.log("You will be charged $" + orderTotal + ". Thank you!");
+                    var orderTotal = quanity * selectedItem[0].price;
+                    
+                    console.log('We have enough (' + selectedItem[0].product_name + ')!');
+                    console.log('Quantity in stock: ' + selectedItem[0].stock + ' Order quantity: ' + quanity);
+                    console.log('You will be charged $' + orderTotal + '. Thank you!');
 
-                    connection.query("UPDATE products SET stock=? WHERE id=?", [item[0].stock - quantity, itemId],
-                    function(err, inventory){
-                        if (err) throw err;
-                        orderAgain();
-                    })
+                    connection.query('UPDATE products SET stock=? WHERE id=?', [selectedItem[0].stock - quanity, itemId],
+                        function(err, inventory) {
+                            if (err) throw err;
+                            orderAgain();
+                        })
                 } else {
-                    console.log("Insufficient quantity. Please adjust your order. We have " + item[0].stock + " " + item[0].product_name + " in stock.");
+                    console.log('Insufficient quantity.  Please adjust your order, we only have ' + selectedItem[0].stock + ' ' + selectedItem[0].product_name + 's in stock.');
                     orderAgain();
                 }
             });
@@ -93,16 +104,16 @@ var start = function() {
 
 var orderAgain = function() {
     inquirer.prompt([{
-        name: "orderAgain",
-        type: "list",
-        message: "Order again?",
-        choices: ["Yes", "No"]
-    }]).then(function(answer){
+        name: 'orderAgain',
+        type: 'list',
+        message: 'Order again?',
+        choices: ['Yes', 'No']
+    }]).then(function(answer) {
         if (answer.orderAgain === 'Yes') {
             start();
         } else {
-            console.log("Thank you, come again!");
-            connection.end();
+            console.log('Thank you, come again!');
+            process.exit();
         }
     })
 }
