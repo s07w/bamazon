@@ -22,17 +22,18 @@ var start = function() {
         if (err) throw err;
 
         var table = new Table ({
-            head: ["id", "product_name", "price", "stock"],
+            head: ["id", "product_name", "department_name", "price", "stock"],
             colWidths: [5, 25, 25, 25]
         });
 
 
         for (var i = 0; i < res.length; i++) {
             table.push([
-                results[i].id,
-                results[i].product_name,
-                results[i].price,
-                results[i].stock
+                res[i].id,
+                res[i].product_name,
+                res[i].department_name,
+                res[i].price,
+                res[i].stock
             ]);
         }
 
