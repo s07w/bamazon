@@ -20,6 +20,7 @@
   "dependencies": {
     "cli-table": "^0.3.1",
     "dotenv": "^6.2.0",
+    "env": "0.0.2",
     "inquirer": "^6.2.2",
     "mysql": "^2.16.0",
     "table": "^5.2.2"
